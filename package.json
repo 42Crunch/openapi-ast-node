@@ -3,6 +3,7 @@
   "author": "42Crunch",
   "license": "AGPL-3.0-only",
   "version": "1.0.0",
+  "author": "Anton Krasovsky <anton.krasovsky@42crunch.com>",
   "repository": "https://github.com/42Crunch/openapi-ast-node",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
