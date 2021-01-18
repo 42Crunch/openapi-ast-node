@@ -1,0 +1,30 @@
+{
+  "name": "xliic-ast",
+  "author": "42Crunch",
+  "license": "AGPL-3.0-only",
+  "version": "1.0.0",
+  "repository": "https://github.com/42Crunch/xliic-ast",
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts", 
+  "scripts": {
+    "compile": "tsc -b",
+    "test": "ava"
+  },
+  "ava": {
+    "nodeArguments": [
+      "--experimental-modules"
+    ],
+    "require": [
+      "esm"
+    ]
+  },
+  "dependencies": {
+    "jsonc-parser": "^2.2.1",
+    "yaml-ast-parser-custom-tags": "0.0.43"
+  },
+  "devDependencies": {
+    "ava": "^3.12.1",
+    "esm": "^3.2.25",
+    "typescript": "^4.0.2"
+  }
+}
