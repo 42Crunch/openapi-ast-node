@@ -7,13 +7,29 @@ import { Node, Options } from "./types";
 import { parseJson, JsonNode } from "./json";
 import { parseYaml, findYamlNodeAtOffset, YamlNode } from "./yaml";
 import { parseJsonPointer, joinJsonPointer } from "./pointer";
+import { replace, Replacement } from "./replace";
 
 function parse(
   text: string,
   languageId: string,
   options: Options
 ): [Node, { message: string; offset: number }[]] {
-  return languageId === "yaml" ? parseYaml(text, options?.yaml?.schema) : parseJson(text);
+  return languageId === "yaml"
+    ? parseYaml(text, options?.yaml?.schema)
+    : parseJson(text);
 }
 
-export { parse, parseYaml, parseJson, findYamlNodeAtOffset, Node, JsonNode, YamlNode, parseJsonPointer, joinJsonPointer };
+export {
+  parse,
+  parseYaml,
+  parseJson,
+  findYamlNodeAtOffset,
+  Node,
+  JsonNode,
+  YamlNode,
+  parseJsonPointer,
+  joinJsonPointer,
+  Options,
+  replace,
+  Replacement,
+};
