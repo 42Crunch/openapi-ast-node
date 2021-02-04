@@ -27,6 +27,10 @@ function loadYaml(filename) {
   return parseYaml(readFileSync(filename, { encoding: 'utf8' }));
 }
 
+function wrap(text) {
+  return text.replace(new RegExp('\r\n', 'g'), '\n');
+}
+
 test('finding nodes, top level, yaml', (t) => {
   const root = loadYaml('tests/xkcd.yaml');
 
@@ -357,4 +361,167 @@ ra/ro: true`);
   t.is(root.find('/foo/1').getJsonPonter(), '/foo/1');
   t.is(root.find('/bar/baz').getJsonPonter(), '/bar/baz');
   t.is(root.find('/ra~1ro').getJsonPonter(), '/ra~1ro');
+});
+
+test("json prev()", (t) => {
+  const root = loadJson('tests/xkcd.json');
+
+  const target = root.find("/swagger");
+  t.is(target.prev(), undefined);
+  t.is(target.next().getJsonPonter(), "/schemes");
+  t.is(target.next().prev().getJsonPonter(), "/swagger");
+
+  const target2 = root.find("/schemes/0");
+  t.is(target2.prev(), undefined);
+  t.is(target2.next().getJsonPonter(), "/schemes/1");
+});
+
+test("json next()", (t) => {
+  const root = loadJson('tests/xkcd.json');
+
+  const target = root.find("/definitions");
+  t.is(target.next(), undefined);
+  t.is(target.prev().getJsonPonter(), "/paths");
+  t.is(target.prev().next().getJsonPonter(), "/definitions");
+
+  const target2 = root.find("/schemes/1");
+  t.is(target2.next(), undefined);
+  t.is(target2.prev().getJsonPonter(), "/schemes/0");
+});
+
+test("json isArray()", (t) => {
+  const root = loadJson('tests/xkcd.json');
+
+  t.is(root.find("/schemes").isArray(), true);
+  t.is(root.find("/schemes/0").isArray(), false);
+  t.is(root.find("/host").isArray(), false);
+  t.is(root.find("/info").isArray(), false);
+});
+
+test("json isObject()", (t) => {
+  const root = loadJson('tests/xkcd.json');
+
+  t.is(root.find("/schemes").isObject(), false);
+  t.is(root.find("/schemes/0").isObject(), false);
+  t.is(root.find("/host").isObject(), false);
+  t.is(root.find("/info").isObject(), true);
+});
+
+test("json getKeyRange()", (t) => {
+  const text = readFileSync('tests/xhr.json', { encoding: "utf8" });
+  const root = parseJson(text);
+
+  let range = root.find("/info/license/name").getKeyRange();
+  t.is(text.substring(range[0], range[1]), 'name');
+
+  range = root.find("/servers/1/url").getKeyRange();
+  t.is(text.substring(range[0], range[1]), 'url');
+
+  range = root.find("/paths/~1posts/get/responses/200").getKeyRange();
+  t.is(text.substring(range[0], range[1]), '200');
+
+  t.is(root.find("/servers/1").getKeyRange(), undefined);
+});
+
+test("json getValueRange()", (t) => {
+  const text = readFileSync('tests/xhr.json', { encoding: "utf8" });
+  const root = parseJson(text);
+
+  let range = root.find("/info/license/name").getValueRange();
+  t.is(text.substring(range[0], range[1]), '"MIT"');
+
+  range = root.find("/servers/1/url").getValueRange();
+  t.is(text.substring(range[0], range[1]), 
+    '"https://jsonplaceholder.typicode.com"');
+
+  range = root.find("/paths/~1posts/get/responses/200").getValueRange();
+  t.is(wrap(text.substring(range[0], range[1])), 
+    '{\n            "description": "OK"\n          }');
+
+  range = root.find("/servers/1").getValueRange();
+  t.is(wrap(text.substring(range[0], range[1])), 
+    '{\n      "url": "https://jsonplaceholder.typicode.com"\n    }');
+});
+
+test("yaml prev()", (t) => {
+  const root = loadYaml('tests/xkcd.yaml');
+
+  const target = root.find("/swagger");
+  t.is(target.prev(), undefined);
+  t.is(target.next().getJsonPonter(), "/schemes");
+  t.is(target.next().prev().getJsonPonter(), "/swagger");
+
+  const target2 = root.find("/schemes/0");
+  t.is(target2.prev(), undefined);
+  t.is(target2.next().getJsonPonter(), "/schemes/1");
+});
+
+test("yaml next()", (t) => {
+  const root = loadYaml('tests/xkcd.yaml');
+
+  const target = root.find("/definitions");
+  t.is(target.next(), undefined);
+  t.is(target.prev().getJsonPonter(), "/paths");
+  t.is(target.prev().next().getJsonPonter(), "/definitions");
+
+  const target2 = root.find("/schemes/1");
+  t.is(target2.next(), undefined);
+  t.is(target2.prev().getJsonPonter(), "/schemes/0");
+});
+
+test("yaml isArray()", (t) => {
+  const root = loadYaml('tests/xkcd.yaml');
+
+  t.is(root.find("/schemes").isArray(), true);
+  t.is(root.find("/schemes/0").isArray(), false);
+  t.is(root.find("/host").isArray(), false);
+  t.is(root.find("/info").isArray(), false);
+});
+
+test("yaml isObject()", (t) => {
+  const root = loadYaml('tests/xkcd.yaml');
+
+  t.is(root.find("/schemes").isObject(), false);
+  t.is(root.find("/schemes/0").isObject(), false);
+  t.is(root.find("/host").isObject(), false);
+  t.is(root.find("/info").isObject(), true);
+});
+
+test("yaml getKeyRange()", (t) => {
+  const text = readFileSync('tests/xkcd.yaml', { encoding: "utf8" });
+  const root = parseYaml(text);
+
+  let range = root.find("/paths/~1%7BcomicId%7D~1info.0.json/get/responses/200").getKeyRange();
+  t.is(text.substring(range[0], range[1]), "'200'");
+
+  range = root.find("/info/x-tags").getKeyRange();
+  t.is(text.substring(range[0], range[1]), 'x-tags');
+
+  range = root.find("/paths/~1%7BcomicId%7D~1info.0.json/get/parameters/0/required").getKeyRange();
+  t.is(text.substring(range[0], range[1]), 'required');
+
+  t.is(
+    root.find("/paths/~1%7BcomicId%7D~1info.0.json/get/parameters/0").getKeyRange(),
+    undefined
+  );
+});
+
+test("yaml getValueRange()", (t) => {
+  const text = readFileSync('tests/xkcd.yaml', { encoding: "utf8" });
+  const root = parseYaml(text);
+
+  let range = root.find("/paths/~1%7BcomicId%7D~1info.0.json/get/responses/200").getValueRange();
+  t.is(wrap(text.substring(range[0], range[1])), 
+    "description: OK\n          schema:\n            $ref: '#/definitions/comic'");
+
+  range = root.find("/info/x-tags").getValueRange();
+    t.is(wrap(text.substring(range[0], range[1])), 
+    '- humor\n    - comics\n  ');
+
+  range = root.find("/paths/~1%7BcomicId%7D~1info.0.json/get/parameters/0/required").getValueRange();
+    t.is(wrap(text.substring(range[0], range[1])), 'true');
+
+  range = root.find("/paths/~1%7BcomicId%7D~1info.0.json/get/parameters/0").getValueRange();
+    t.is(wrap(text.substring(range[0], range[1])), 
+    'in: path\n          name: comicId\n          required: true\n          type: number');
 });
