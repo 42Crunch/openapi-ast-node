@@ -7,7 +7,7 @@ import * as yaml from "yaml-language-server-parser";
 import { Schema, DEFAULT_SAFE_SCHEMA } from "js-yaml";
 import { Node } from "./types";
 import { parseJsonPointer, joinJsonPointer } from "./pointer";
-import { traverse } from "./traverse";
+import { find, resolve } from "./traverse";
 
 export function parseYaml(
   text: string,
@@ -44,14 +44,25 @@ export class YamlNode implements Node {
   }
 
   resolve(pointer: string) {
-    const node = traverse(this.node, parseJsonPointer(pointer), findChildByNameAndResolve(this));
+    const node = resolve(
+      this.node,
+      parseJsonPointer(pointer),
+      findChildByName,
+      getReference,
+      (reference) => {
+        const resolved = this.resolve(reference);
+        if (resolved && resolved.node) {
+          return resolved.node;
+        }
+      }
+    );
     if (node) {
       return new YamlNode(node);
     }
   }
 
   find(pointer: string) {
-    const node = traverse(this.node, parseJsonPointer(pointer), findChildByName);
+    const node = find(this.node, parseJsonPointer(pointer), findChildByName);
     if (node) {
       return new YamlNode(node);
     }
@@ -218,29 +229,17 @@ export class YamlNode implements Node {
   }
 }
 
-const findChildByNameAndResolve = (root: YamlNode) => (
-  parent: yaml.YAMLNode,
-  name: string
-): yaml.YAMLNode | undefined => {
-  const child = findChildByName(parent, name);
-  if (child && child.kind === yaml.Kind.MAPPING) {
-    const ref = findChildByName(child, "$ref");
-    if (
-      ref?.kind === yaml.Kind.MAPPING &&
-      ref?.value?.kind == yaml.Kind.SCALAR &&
-      typeof ref?.value?.value === "string" &&
-      ref.value.value.startsWith("#")
-    ) {
-      const resolved = root.resolve(ref.value.value);
-      if (resolved && resolved.node) {
-        return resolved.node;
-      } else {
-        return null;
-      }
-    }
+function getReference(node: yaml.YAMLNode): string | undefined {
+  const ref = findChildByName(node, "$ref");
+  if (
+    ref?.kind === yaml.Kind.MAPPING &&
+    ref?.value?.kind == yaml.Kind.SCALAR &&
+    typeof ref?.value?.value === "string" &&
+    ref.value.value.startsWith("#")
+  ) {
+    return ref.value.value;
   }
-  return child;
-};
+}
 
 function findChildByName(parent: yaml.YAMLNode, name: string): yaml.YAMLNode | undefined {
   if (parent.kind === yaml.Kind.MAP) {

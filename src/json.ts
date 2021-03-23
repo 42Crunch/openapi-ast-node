@@ -6,7 +6,7 @@
 import * as json from "jsonc-parser";
 import { Node } from "./types";
 import { parseJsonPointer, joinJsonPointer } from "./pointer";
-import { traverse } from "./traverse";
+import { find, resolve } from "./traverse";
 
 export function parseJson(text: string): [JsonNode, { message: string; offset: number }[]] {
   const parseErrors: json.ParseError[] = [];
@@ -32,14 +32,25 @@ export class JsonNode implements Node {
   }
 
   resolve(pointer: string) {
-    const node = traverse(this.node, parseJsonPointer(pointer), findChildByNameAndResolve(this));
+    const node = resolve(
+      this.node,
+      parseJsonPointer(pointer),
+      findChildByName,
+      getReference,
+      (reference) => {
+        const resolved = this.resolve(reference);
+        if (resolved && resolved.node) {
+          return resolved.node;
+        }
+      }
+    );
     if (node) {
       return new JsonNode(node);
     }
   }
 
   find(pointer: string) {
-    const node = traverse(this.node, parseJsonPointer(pointer), findChildByName);
+    const node = find(this.node, parseJsonPointer(pointer), findChildByName);
     if (node) {
       return new JsonNode(node);
     }
@@ -151,24 +162,14 @@ export class JsonNode implements Node {
   }
 }
 
-const findChildByNameAndResolve = (root: JsonNode) => (
-  parent: json.Node,
-  name: string
-): json.Node | undefined => {
-  const child = findChildByName(parent, name);
-  if (child && child.type === "object") {
-    const ref = getValueByPropertyName(child, "$ref");
+function getReference(node: json.Node): string | undefined {
+  if (node.type === "object") {
+    const ref = getValueByPropertyName(node, "$ref");
     if (ref && ref.value && typeof ref.value === "string" && ref.value.startsWith("#")) {
-      const resolved = root.resolve(ref.value);
-      if (resolved && resolved.node) {
-        return resolved.node;
-      } else {
-        return null;
-      }
+      return ref.value;
     }
   }
-  return child;
-};
+}
 
 function findChildByName(parent: json.Node, name: string): json.Node | undefined {
   if (parent.type === "object") {

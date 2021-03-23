@@ -552,7 +552,12 @@ test("yaml resolve ref target", (t) => {
 foo:
   $ref: "#/bar"`);
 
-  t.is(root.resolve("/foo/$ref"), undefined);
+  t.is(root.resolve("/foo/$ref").getValue(), "#/bar");
+});
+
+test("json resolve ref target", (t) => {
+  const root = parseJson(`{"foo": {"$ref": "#/bar"}}`);
+  t.is(root.resolve("/foo/$ref").getValue(), "#/bar");
   t.is(root.find("/foo/$ref").getValue(), "#/bar");
 });
 
