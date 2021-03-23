@@ -31,14 +31,18 @@ export class JsonNode implements Node {
     this.node = node;
   }
 
-  resolve(rawpointer: string) {
-    return new JsonNode(
-      traverse(this.node, parseJsonPointer(rawpointer), findChildByNameAndResolve(this))
-    );
+  resolve(pointer: string) {
+    const node = traverse(this.node, parseJsonPointer(pointer), findChildByNameAndResolve(this));
+    if (node) {
+      return new JsonNode(node);
+    }
   }
 
-  find(rawpointer: string) {
-    return new JsonNode(traverse(this.node, parseJsonPointer(rawpointer), findChildByName));
+  find(pointer: string) {
+    const node = traverse(this.node, parseJsonPointer(pointer), findChildByName);
+    if (node) {
+      return new JsonNode(node);
+    }
   }
 
   getParent(): JsonNode {
