@@ -3,10 +3,11 @@
  Licensed under the GNU Affero General Public License version 3. See LICENSE.txt in the project root for license information.
 */
 
-import * as yaml from "yaml-ast-parser-custom-tags";
+import * as yaml from "yaml-language-server-parser";
 import { Schema, DEFAULT_SAFE_SCHEMA } from "js-yaml";
 import { Node } from "./types";
 import { parseJsonPointer, joinJsonPointer } from "./pointer";
+import { traverse } from "./traverse";
 
 export function parseYaml(
   text: string,
@@ -42,13 +43,14 @@ export class YamlNode implements Node {
     this.node = node;
   }
 
+  resolve(rawpointer: string) {
+    return new YamlNode(
+      traverse(this.node, parseJsonPointer(rawpointer), findChildByNameAndResolve(this))
+    );
+  }
+
   find(rawpointer: string) {
-    const pointer = parseJsonPointer(rawpointer);
-    const result = findNodeAtLocation(this.node, pointer);
-    if (result) {
-      return new YamlNode(result);
-    }
-    return null;
+    return new YamlNode(traverse(this.node, parseJsonPointer(rawpointer), findChildByName));
   }
 
   getParent(): YamlNode {
@@ -212,50 +214,66 @@ export class YamlNode implements Node {
   }
 }
 
-function findNodeAtLocation(root: yaml.YAMLNode, path: string[]): yaml.YAMLNode {
-  if (path.length === 0) {
-    return root;
-  }
-
-  if (root && root.kind === yaml.Kind.MAP) {
-    const head = path[0];
-    const tree = <yaml.YamlMap>root;
-    let mergeKey: yaml.YAMLAnchorReference = null;
-    for (const mapping of tree.mappings) {
-      if (mapping.key && mapping.key.kind === yaml.Kind.SCALAR && mapping.key.value === head) {
-        if (path.length === 1) {
-          // this is the last entry in path, return found node
-          return mapping;
-        } else {
-          return findNodeAtLocation(mapping.value, path.slice(1));
-        }
-      } else if (
-        mapping.key &&
-        mapping.key.kind === yaml.Kind.SCALAR &&
-        mapping.key.value === "<<" &&
-        mapping.value.kind === yaml.Kind.ANCHOR_REF
-      ) {
-        mergeKey = <yaml.YAMLAnchorReference>mapping.value;
+const findChildByNameAndResolve = (root: YamlNode) => (
+  parent: yaml.YAMLNode,
+  name: string
+): yaml.YAMLNode | undefined => {
+  const child = findChildByName(parent, name);
+  if (child && parent.kind === yaml.Kind.MAP) {
+    const ref = findChildByName(child, "$ref");
+    if (
+      ref?.kind === yaml.Kind.MAPPING &&
+      ref?.value?.kind == yaml.Kind.SCALAR &&
+      typeof ref?.value?.value === "string" &&
+      ref.value.value.startsWith("#")
+    ) {
+      const resolved = root.resolve(ref.value.value.slice(1)); // trim hash
+      if (resolved && resolved.node) {
+        return resolved.node;
+      } else {
+        return null;
       }
     }
-    // if nothing was found, but there is a merge key, check it as well
-    if (mergeKey) {
-      return findNodeAtLocation(mergeKey.value, path);
-    }
-  } else if (root && root.kind === yaml.Kind.SEQ) {
-    const tree = <yaml.YAMLSequence>root;
-    const index = parseInt(path[0] as string, 10);
-    const mapping = tree.items[index];
-    if (path.length === 1) {
-      // this is the last entry in path, return found node
-      return mapping;
-    } else {
-      return findNodeAtLocation(mapping, path.slice(1));
-    }
-  } else if (root && root.kind === yaml.Kind.ANCHOR_REF) {
-    return findNodeAtLocation(root.value, path);
   }
-  return null;
+  return child;
+};
+
+function findChildByName(parent: yaml.YAMLNode, name: string): yaml.YAMLNode | undefined {
+  if (parent.kind === yaml.Kind.MAP) {
+    return getChildFromMap(<yaml.YamlMap>parent, name);
+  } else if (parent.kind === yaml.Kind.SEQ) {
+    return getChildFromSeq(<yaml.YAMLSequence>parent, name);
+  } else if (parent.kind === yaml.Kind.MAPPING) {
+    return findChildByName(parent.value, name);
+  }
+}
+
+function getChildFromMap(parent: yaml.YamlMap, name: string): yaml.YAMLNode | undefined {
+  // check all mappings for the specified key first
+  for (const mapping of parent.mappings) {
+    if (mapping.key && mapping.key.kind === yaml.Kind.SCALAR && mapping.key.value === name) {
+      return mapping;
+    }
+  }
+  // now check if there is an anchor and check it as well
+  for (const mapping of parent.mappings) {
+    if (
+      mapping.key &&
+      mapping.key.kind === yaml.Kind.SCALAR &&
+      mapping.key.value === "<<" &&
+      mapping.value.kind === yaml.Kind.ANCHOR_REF
+    ) {
+      const mergeKey = <yaml.YAMLAnchorReference>mapping.value;
+      return findChildByName(mergeKey, name);
+    }
+  }
+}
+
+function getChildFromSeq(parent: yaml.YAMLSequence, name: string): yaml.YAMLNode | undefined {
+  const index = parseInt(name as string, 10);
+  // TODO check bounds
+  const mapping = parent.items[index];
+  return mapping;
 }
 
 function contains(node: yaml.YAMLNode, offset: number) {

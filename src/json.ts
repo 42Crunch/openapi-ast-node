@@ -6,11 +6,15 @@
 import * as json from "jsonc-parser";
 import { Node } from "./types";
 import { parseJsonPointer, joinJsonPointer } from "./pointer";
+import { traverse } from "./traverse";
 
 export function parseJson(text: string): [JsonNode, { message: string; offset: number }[]] {
   const parseErrors: json.ParseError[] = [];
   const node = new JsonNode(
-    json.parseTree(text, parseErrors, { allowTrailingComma: true, allowEmptyContent: true })
+    json.parseTree(text, parseErrors, {
+      allowTrailingComma: true,
+      allowEmptyContent: true,
+    })
   );
   const normalizedErrors = parseErrors.map((error) => ({
     message: json.printParseErrorCode(error.error),
@@ -27,45 +31,14 @@ export class JsonNode implements Node {
     this.node = node;
   }
 
+  resolve(rawpointer: string) {
+    return new JsonNode(
+      traverse(this.node, parseJsonPointer(rawpointer), findChildByNameAndResolve(this))
+    );
+  }
+
   find(rawpointer: string) {
-    const pointer = parseJsonPointer(rawpointer);
-
-    let node = this.node;
-
-    if (!node) {
-      return null;
-    }
-
-    for (let segment of pointer) {
-      // each object we traverse must be either object or array
-      if (node.type === "object" && Array.isArray(node.children)) {
-        let found = false;
-        for (let propertyNode of node.children) {
-          if (Array.isArray(propertyNode.children) && propertyNode.children[0].value === segment) {
-            node = propertyNode.children[1];
-            found = true;
-            break;
-          }
-        }
-        if (!found) {
-          return null;
-        }
-      } else {
-        const index = parseInt(segment, 10);
-        if (
-          node.type === "array" &&
-          index >= 0 &&
-          Array.isArray(node.children) &&
-          index < node.children.length
-        ) {
-          node = node.children[index];
-        } else {
-          return null;
-        }
-      }
-    }
-
-    return new JsonNode(node);
+    return new JsonNode(traverse(this.node, parseJsonPointer(rawpointer), findChildByName));
   }
 
   getParent(): JsonNode {
@@ -172,4 +145,56 @@ export class JsonNode implements Node {
   isObject(): boolean {
     return this.node.type === "object";
   }
+}
+
+const findChildByNameAndResolve = (root: JsonNode) => (
+  parent: json.Node,
+  name: string
+): json.Node | undefined => {
+  const child = findChildByName(parent, name);
+  if (child && child.type === "object") {
+    const ref = getValueByPropertyName(child, "$ref");
+    if (ref && ref.value && typeof ref.value === "string" && ref.value.startsWith("#")) {
+      const resolved = root.resolve(ref.value.slice(1)); // trim hash
+      if (resolved && resolved.node) {
+        return resolved.node;
+      } else {
+        return null;
+      }
+    }
+  }
+  return child;
+};
+
+function findChildByName(parent: json.Node, name: string): json.Node | undefined {
+  if (parent.type === "object") {
+    return getValueByPropertyName(parent, name);
+  } else {
+    return getValueByPropertyIndex(parent, name);
+  }
+}
+
+function getValueByPropertyName(objectNode: json.Node, name: string) {
+  if (!objectNode.children) {
+    return null;
+  }
+  for (let propertyNode of objectNode.children) {
+    if (Array.isArray(propertyNode.children) && propertyNode.children[0].value === name) {
+      return propertyNode.children[1];
+    }
+  }
+  return null;
+}
+
+function getValueByPropertyIndex(arrayNode: json.Node, propertyIndex: string) {
+  const index = parseInt(propertyIndex, 10);
+  if (
+    arrayNode.type === "array" &&
+    index >= 0 &&
+    Array.isArray(arrayNode.children) &&
+    index < arrayNode.children.length
+  ) {
+    return arrayNode.children[index];
+  }
+  return null;
 }

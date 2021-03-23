@@ -7,8 +7,8 @@ import { Schema } from "js-yaml";
 
 export interface Options {
   yaml?: {
-    schema?: Schema
-  }
+    schema?: Schema;
+  };
 }
 
 export interface Node {
@@ -18,6 +18,7 @@ export interface Node {
   getValue(): string;
   getParent(): Node;
   find(pointer: string): Node;
+  resolve(pointer: string): Node;
   getRange(): [number, number];
   getKeyRange(): [number, number] | undefined;
   getValueRange(): [number, number] | undefined;
