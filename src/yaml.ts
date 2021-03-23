@@ -43,18 +43,13 @@ export class YamlNode implements Node {
     this.node = node;
   }
 
-  resolve(pointer: string) {
+  resolve(pointer, resolveReference) {
     const node = resolve(
       this.node,
       parseJsonPointer(pointer),
       findChildByName,
       getReference,
-      (reference) => {
-        const resolved = this.resolve(reference);
-        if (resolved && resolved.node) {
-          return resolved.node;
-        }
-      }
+      resolveReference
     );
     if (node) {
       return new YamlNode(node);

@@ -31,6 +31,18 @@ function wrap(text) {
   return text.replace(new RegExp("\r\n", "g"), "\n");
 }
 
+function resolveReference(root) {
+  function unwrap(resolved) {
+    if (resolved && resolved.node) {
+      return resolved.node;
+    }
+  }
+  return function (reference) {
+    const resolved = root.resolve(reference, (reference) => unwrap(root.resolve(reference)));
+    return unwrap(resolved);
+  };
+}
+
 test("finding nodes, top level, yaml", (t) => {
   const root = loadYaml("tests/xkcd.yaml");
 
@@ -530,12 +542,12 @@ test("yaml getValueRange()", (t) => {
 
 test("json resolve one", (t) => {
   const root = parseJson(`{"foo": {"$ref": "#/bar"}, "bar": "baz"}`);
-  t.is(root.resolve("/foo").getValue(), "baz");
+  t.is(root.resolve("/foo", resolveReference(root)).getValue(), "baz");
 });
 
 test("json resolve two", (t) => {
   const root = parseJson(`{"foo": {"$ref": "#/bar"}, "bar": {"$ref": "#/baz"}, "baz": "zzz"}`);
-  t.is(root.resolve("/foo").getValue(), "zzz");
+  t.is(root.resolve("/foo", resolveReference(root)).getValue(), "zzz");
 });
 
 test("yaml resolve one", (t) => {
@@ -544,7 +556,7 @@ foo:
   $ref: "#/bar"
 bar:
   baz`);
-  t.is(root.resolve("/foo").getValue(), "baz");
+  t.is(root.resolve("/foo", resolveReference(root)).getValue(), "baz");
 });
 
 test("yaml resolve ref target", (t) => {
@@ -552,12 +564,12 @@ test("yaml resolve ref target", (t) => {
 foo:
   $ref: "#/bar"`);
 
-  t.is(root.resolve("/foo/$ref").getValue(), "#/bar");
+  t.is(root.resolve("/foo/$ref", resolveReference(root)).getValue(), "#/bar");
 });
 
 test("json resolve ref target", (t) => {
   const root = parseJson(`{"foo": {"$ref": "#/bar"}}`);
-  t.is(root.resolve("/foo/$ref").getValue(), "#/bar");
+  t.is(root.resolve("/foo/$ref", resolveReference(root)).getValue(), "#/bar");
   t.is(root.find("/foo/$ref").getValue(), "#/bar");
 });
 
@@ -568,7 +580,7 @@ foo:
 bar:
   $ref: "#/baz"
 baz: zzz`);
-  t.is(root.resolve("/foo").getValue(), "zzz");
+  t.is(root.resolve("/foo", resolveReference(root)).getValue(), "zzz");
 });
 
 test("yaml resolve intermediate", (t) => {
@@ -580,7 +592,7 @@ foo:
   Baz:
     two:
         aaa: bbb`);
-  t.is(root.resolve("/foo/Bar/one/two/aaa").getValue(), "bbb");
+  t.is(root.resolve("/foo/Bar/one/two/aaa", resolveReference(root)).getValue(), "bbb");
 });
 
 test("json resolve intermediate", (t) => {
@@ -599,5 +611,5 @@ test("json resolve intermediate", (t) => {
   }
 }`);
 
-  t.is(root.resolve("/foo/Bar/one/two/aaa").getValue(), "bbb");
+  t.is(root.resolve("/foo/Bar/one/two/aaa", resolveReference(root)).getValue(), "bbb");
 });
