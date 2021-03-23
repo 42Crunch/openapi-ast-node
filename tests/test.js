@@ -547,6 +547,15 @@ bar:
   t.is(root.resolve("/foo").getValue(), "baz");
 });
 
+test("yaml resolve ref target", (t) => {
+  const root = parseYaml(`
+foo:
+  $ref: "#/bar"`);
+
+  t.is(root.resolve("/foo/$ref"), undefined);
+  t.is(root.find("/foo/$ref").getValue(), "#/bar");
+});
+
 test("yaml resolve two", (t) => {
   const root = parseYaml(`
 foo:
@@ -555,4 +564,35 @@ bar:
   $ref: "#/baz"
 baz: zzz`);
   t.is(root.resolve("/foo").getValue(), "zzz");
+});
+
+test("yaml resolve intermediate", (t) => {
+  const root = parseYaml(`
+foo:
+  Bar:
+    one:
+      $ref: "#/foo/Baz"
+  Baz:
+    two:
+        aaa: bbb`);
+  t.is(root.resolve("/foo/Bar/one/two/aaa").getValue(), "bbb");
+});
+
+test("json resolve intermediate", (t) => {
+  const root = parseJson(`{
+  "foo": {
+    "Bar": {
+      "one": {
+        "$ref": "#/foo/Baz"
+      }
+    },
+    "Baz": {
+      "two": {
+        "aaa": "bbb"
+      }
+    }
+  }
+}`);
+
+  t.is(root.resolve("/foo/Bar/one/two/aaa").getValue(), "bbb");
 });

@@ -159,7 +159,7 @@ const findChildByNameAndResolve = (root: JsonNode) => (
   if (child && child.type === "object") {
     const ref = getValueByPropertyName(child, "$ref");
     if (ref && ref.value && typeof ref.value === "string" && ref.value.startsWith("#")) {
-      const resolved = root.resolve(ref.value.slice(1)); // trim hash
+      const resolved = root.resolve(ref.value);
       if (resolved && resolved.node) {
         return resolved.node;
       } else {

@@ -223,7 +223,7 @@ const findChildByNameAndResolve = (root: YamlNode) => (
   name: string
 ): yaml.YAMLNode | undefined => {
   const child = findChildByName(parent, name);
-  if (child && parent.kind === yaml.Kind.MAP) {
+  if (child && child.kind === yaml.Kind.MAPPING) {
     const ref = findChildByName(child, "$ref");
     if (
       ref?.kind === yaml.Kind.MAPPING &&
@@ -231,7 +231,7 @@ const findChildByNameAndResolve = (root: YamlNode) => (
       typeof ref?.value?.value === "string" &&
       ref.value.value.startsWith("#")
     ) {
-      const resolved = root.resolve(ref.value.value.slice(1)); // trim hash
+      const resolved = root.resolve(ref.value.value);
       if (resolved && resolved.node) {
         return resolved.node;
       } else {
