@@ -6,7 +6,7 @@
 import * as json from "jsonc-parser";
 import { Node } from "./types";
 import { parseJsonPointer, joinJsonPointer } from "./pointer";
-import { find, resolve } from "./traverse";
+import { find } from "./traverse";
 
 export function parseJson(text: string): [JsonNode, { message: string; offset: number }[]] {
   const parseErrors: json.ParseError[] = [];
@@ -29,19 +29,6 @@ export class JsonNode implements Node {
 
   constructor(node: json.Node) {
     this.node = node;
-  }
-
-  resolve(pointer, resolveReference) {
-    const node = resolve(
-      this.node,
-      parseJsonPointer(pointer),
-      findChildByName,
-      getReference,
-      resolveReference
-    );
-    if (node) {
-      return new JsonNode(node);
-    }
   }
 
   find(pointer: string) {
@@ -157,24 +144,15 @@ export class JsonNode implements Node {
   }
 }
 
-function getReference(node: json.Node): string | undefined {
-  if (node.type === "object") {
-    const ref = getValueByPropertyName(node, "$ref");
-    if (ref && ref.value && typeof ref.value === "string" && ref.value.startsWith("#")) {
-      return ref.value;
-    }
-  }
-}
-
 function findChildByName(parent: json.Node, name: string): json.Node | undefined {
   if (parent.type === "object") {
-    return getValueByPropertyName(parent, name);
+    return getChildFromObject(parent, name);
   } else {
-    return getValueByPropertyIndex(parent, name);
+    return getChildFromArray(parent, name);
   }
 }
 
-function getValueByPropertyName(objectNode: json.Node, name: string) {
+function getChildFromObject(objectNode: json.Node, name: string) {
   if (!objectNode.children) {
     return null;
   }
@@ -186,7 +164,7 @@ function getValueByPropertyName(objectNode: json.Node, name: string) {
   return null;
 }
 
-function getValueByPropertyIndex(arrayNode: json.Node, propertyIndex: string) {
+function getChildFromArray(arrayNode: json.Node, propertyIndex: string) {
   const index = parseInt(propertyIndex, 10);
   if (
     arrayNode.type === "array" &&

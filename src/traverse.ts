@@ -18,28 +18,3 @@ export function find<Node>(
 
   return current;
 }
-
-export function resolve<Node>(
-  root: Node,
-  path: string[],
-  findByName: (node: Node, property: string) => Node | undefined,
-  getReference: (node: Node) => string | undefined,
-  resolveReference: (reference: string) => Node | undefined
-): Node | undefined {
-  let current = root;
-  for (let i = 0; i < path.length && current; i++) {
-    const name = path[i];
-    const nextName = i + 1 < path.length ? path[i + 1] : null;
-    current = findByName(current, name);
-    // do not attempt to check and resolve reference if the next in path is $ref
-    // this allows for json paths that target $ref attribute itself, i.e. /foo/$ref
-    if (current && nextName != "$ref") {
-      const ref = getReference(current);
-      if (ref) {
-        current = resolveReference(ref);
-      }
-    }
-  }
-
-  return current;
-}

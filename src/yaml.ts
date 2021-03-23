@@ -7,7 +7,7 @@ import * as yaml from "yaml-language-server-parser";
 import { Schema, DEFAULT_SAFE_SCHEMA } from "js-yaml";
 import { Node } from "./types";
 import { parseJsonPointer, joinJsonPointer } from "./pointer";
-import { find, resolve } from "./traverse";
+import { find } from "./traverse";
 
 export function parseYaml(
   text: string,
@@ -41,19 +41,6 @@ export class YamlNode implements Node {
 
   constructor(node: yaml.YAMLNode) {
     this.node = node;
-  }
-
-  resolve(pointer, resolveReference) {
-    const node = resolve(
-      this.node,
-      parseJsonPointer(pointer),
-      findChildByName,
-      getReference,
-      resolveReference
-    );
-    if (node) {
-      return new YamlNode(node);
-    }
   }
 
   find(pointer: string) {
@@ -221,18 +208,6 @@ export class YamlNode implements Node {
     }
 
     return joinJsonPointer(path.reverse());
-  }
-}
-
-function getReference(node: yaml.YAMLNode): string | undefined {
-  const ref = findChildByName(node, "$ref");
-  if (
-    ref?.kind === yaml.Kind.MAPPING &&
-    ref?.value?.kind == yaml.Kind.SCALAR &&
-    typeof ref?.value?.value === "string" &&
-    ref.value.value.startsWith("#")
-  ) {
-    return ref.value.value;
   }
 }
 

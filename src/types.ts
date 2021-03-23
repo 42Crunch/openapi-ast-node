@@ -18,7 +18,6 @@ export interface Node {
   getValue(): string;
   getParent(): Node;
   find(pointer: string): Node;
-  resolve(pointer: string, resolveReference: (reference: string) => Node | undefined): Node;
   getRange(): [number, number];
   getKeyRange(): [number, number] | undefined;
   getValueRange(): [number, number] | undefined;
