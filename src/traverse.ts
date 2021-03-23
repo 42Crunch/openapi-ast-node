@@ -1,4 +1,7 @@
-import { joinJsonPointer } from "./pointer";
+/*
+ Copyright (c) 42Crunch Ltd. All rights reserved.
+ Licensed under the GNU Affero General Public License version 3. See LICENSE.txt in the project root for license information.
+*/
 
 export function traverse<Node>(
   root: Node,
@@ -9,7 +12,7 @@ export function traverse<Node>(
   for (const name of path) {
     current = find(current, name);
     if (!current) {
-      throw new Error(`Unable to find node with pointer: ${joinJsonPointer(path)}`);
+      return;
     }
   }
 
