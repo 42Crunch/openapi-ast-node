@@ -218,6 +218,8 @@ function findChildByName(parent: yaml.YAMLNode, name: string): yaml.YAMLNode | u
     return getChildFromSeq(<yaml.YAMLSequence>parent, name);
   } else if (parent.kind === yaml.Kind.MAPPING) {
     return findChildByName(parent.value, name);
+  } else if (parent.kind === yaml.Kind.ANCHOR_REF) {
+    return findChildByName(parent.value, name);
   }
 }
 
