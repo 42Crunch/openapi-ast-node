@@ -2,7 +2,7 @@
   "name": "@xliic/openapi-ast-node",
   "author": "Anton Krasovsky <anton.krasovsky@42crunch.com>",
   "license": "AGPL-3.0-only",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "repository": "https://github.com/42Crunch/openapi-ast-node",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",

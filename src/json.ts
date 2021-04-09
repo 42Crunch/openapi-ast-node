@@ -10,18 +10,22 @@ import { find } from "./traverse";
 
 export function parseJson(text: string): [JsonNode, { message: string; offset: number }[]] {
   const parseErrors: json.ParseError[] = [];
-  const node = new JsonNode(
-    json.parseTree(text, parseErrors, {
-      allowTrailingComma: true,
-      allowEmptyContent: true,
-    })
-  );
+
+  const node = json.parseTree(text, parseErrors, {
+    allowTrailingComma: true,
+    allowEmptyContent: true,
+  });
+
   const normalizedErrors = parseErrors.map((error) => ({
     message: json.printParseErrorCode(error.error),
     offset: error.offset,
   }));
 
-  return [node, normalizedErrors];
+  if (node) {
+    return [new JsonNode(node), normalizedErrors];
+  } else {
+    return [undefined, normalizedErrors];
+  }
 }
 
 export class JsonNode implements Node {
