@@ -164,6 +164,8 @@ export class YamlNode implements Node {
           result.push(new YamlNode(item));
         }
       }
+    } else {
+      return [];
     }
     return result;
   }

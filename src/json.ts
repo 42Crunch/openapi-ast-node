@@ -8,6 +8,8 @@ import { Node } from "./types";
 import { parseJsonPointer, joinJsonPointer } from "./pointer";
 import { find } from "./traverse";
 
+type MutableRequired<T> = { -readonly [P in keyof T]-?: T[P] };
+
 export function parseJson(text: string): [JsonNode, { message: string; offset: number }[]] {
   const parseErrors: json.ParseError[] = [];
 
@@ -22,9 +24,25 @@ export function parseJson(text: string): [JsonNode, { message: string; offset: n
   }));
 
   if (node) {
+    dfs(node, text);
     return [new JsonNode(node), normalizedErrors];
   } else {
     return [undefined, normalizedErrors];
+  }
+}
+
+function dfs(node: json.Node, text: string) {
+  if (typeof(node.value) === 'number') {
+    const [start, end] = new JsonNode(node).getValueRange();
+    const value = text.substring(start, end);
+    if (value !== node.value.toString()) {
+      const mutableNode = <MutableRequired<json.Node>>node;
+      mutableNode.value = text.substring(start, end);
+    }
+  } else if (node.children) {
+    for (const child of node.children) {
+      dfs(child, text);
+    }
   }
 }
 
@@ -94,6 +112,8 @@ export class JsonNode implements Node {
       return this.node.children.map((child) => new JsonNode(child.children[1]));
     } else if (this.node.type === "array") {
       return this.node.children.map((child) => new JsonNode(child));
+    } else {
+      return [];
     }
   }
 
