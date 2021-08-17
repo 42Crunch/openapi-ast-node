@@ -13,10 +13,8 @@ function parse(
   text: string,
   languageId: string,
   options: Options
-): [Node, { message: string; offset: number }[]] {
-  return languageId === "yaml"
-    ? parseYaml(text, options?.yaml?.schema)
-    : parseJson(text);
+): [Node, { message: string; offset: number; length?: number }[]] {
+  return languageId === "yaml" ? parseYaml(text, options?.yaml?.schema) : parseJson(text);
 }
 
 export {

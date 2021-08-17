@@ -4,21 +4,36 @@
 */
 
 import * as json from "jsonc-parser";
+import { ExtendedError, ExtendedErrorCode, parseTree } from "./json-parser";
 import { Node } from "./types";
 import { parseJsonPointer, joinJsonPointer } from "./pointer";
 import { find } from "./traverse";
 
-export function parseJson(text: string): [JsonNode, { message: string; offset: number }[]] {
+function extendedErrorToMessage(error: ExtendedError) {
+  if (error.extendedError) {
+    if (error.extendedError === ExtendedErrorCode.DuplicateKey) {
+      return "DuplicateKey";
+    }
+    return "<unknown ExtendedErrorCode>";
+  }
+  return json.printParseErrorCode(error.error);
+}
+
+export function parseJson(
+  text: string
+): [JsonNode, { message: string; offset: number; length: number }[]] {
   const parseErrors: json.ParseError[] = [];
 
-  const node = json.parseTree(text, parseErrors, {
-    allowTrailingComma: true,
-    allowEmptyContent: true,
+  const node = parseTree(text, parseErrors, {
+    disallowComments: true,
+    allowTrailingComma: false,
+    allowEmptyContent: false,
   });
 
   const normalizedErrors = parseErrors.map((error) => ({
-    message: json.printParseErrorCode(error.error),
+    message: extendedErrorToMessage(error),
     offset: error.offset,
+    length: error.length,
   }));
 
   if (node) {

@@ -114,9 +114,8 @@ export class YamlNode implements Node {
   }
 
   next(): YamlNode | undefined {
-    const children = (this.node.parent.kind === yaml.Kind.MAP
-      ? new YamlNode(this.node.parent)
-      : this.getParent()
+    const children = (
+      this.node.parent.kind === yaml.Kind.MAP ? new YamlNode(this.node.parent) : this.getParent()
     ).getChildren();
     for (let i = 1; i < children.length; i++) {
       if (this.node === children[i - 1].node) {
@@ -126,9 +125,8 @@ export class YamlNode implements Node {
   }
 
   prev(): YamlNode | undefined {
-    const children = (this.node.parent.kind === yaml.Kind.MAP
-      ? new YamlNode(this.node.parent)
-      : this.getParent()
+    const children = (
+      this.node.parent.kind === yaml.Kind.MAP ? new YamlNode(this.node.parent) : this.getParent()
     ).getChildren();
     for (let i = 0; i < children.length - 1; i++) {
       if (this.node === children[i + 1].node) {
