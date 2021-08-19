@@ -400,6 +400,12 @@ ra/ro: true`);
     expect(root.find("/info").isObject()).toEqual(true);
   });
 
+  it("json isObject() and isArray() for null", async () => {
+    const [root] = parseJson('{"foo": null}');
+    expect(root.find("/foo").isObject()).toEqual(false);
+    expect(root.find("/foo").isArray()).toEqual(false);
+  });
+
   it("json getKeyRange()", async () => {
     const text = readFileSync("tests/xhr.json", { encoding: "utf8" });
     const [root] = parseJson(text);
@@ -479,6 +485,12 @@ ra/ro: true`);
     expect(root.find("/schemes/0").isObject()).toEqual(false);
     expect(root.find("/host").isObject()).toEqual(false);
     expect(root.find("/info").isObject()).toEqual(true);
+  });
+
+  it("yaml isObject() and isArray() for null", async () => {
+    const [root] = parseYaml("foo: ");
+    expect(root.find("/foo").isObject()).toEqual(false);
+    expect(root.find("/foo").isArray()).toEqual(false);
   });
 
   it("yaml getKeyRange()", async () => {

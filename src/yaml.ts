@@ -8,6 +8,7 @@ import { Schema, DEFAULT_SAFE_SCHEMA } from "js-yaml";
 import { Node } from "./types";
 import { parseJsonPointer, joinJsonPointer } from "./pointer";
 import { find } from "./traverse";
+import { resourceLimits } from "worker_threads";
 
 export function parseYaml(
   text: string,
@@ -102,14 +103,18 @@ export class YamlNode implements Node {
   isArray(): boolean {
     return (
       this.node.kind === yaml.Kind.SEQ ||
-      (this.node.kind === yaml.Kind.MAPPING && this.node.value.kind === yaml.Kind.SEQ)
+      (this.node.kind === yaml.Kind.MAPPING &&
+        this.node.value !== null &&
+        this.node.value.kind === yaml.Kind.SEQ)
     );
   }
 
   isObject(): boolean {
     return (
       this.node.kind === yaml.Kind.MAP ||
-      (this.node.kind === yaml.Kind.MAPPING && this.node.value.kind === yaml.Kind.MAP)
+      (this.node.kind === yaml.Kind.MAPPING &&
+        this.node.value !== null &&
+        this.node.value.kind === yaml.Kind.MAP)
     );
   }
 
