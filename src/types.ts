@@ -7,7 +7,7 @@ import { Node as JsonNode } from "jsonc-parser";
 
 export interface Options {
   yaml?: {
-    schema?: any;
+    customTags?: { [tag: string]: "scalar" | "sequence" | "mapping" };
   };
 }
 

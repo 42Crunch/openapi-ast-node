@@ -1,4 +1,4 @@
-import { parseJson, parseYaml } from "../src";
+import { parseYaml } from "../src";
 import { readFileSync } from "fs";
 
 function loadYaml(filename) {

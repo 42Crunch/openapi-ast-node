@@ -4,14 +4,17 @@
 */
 
 import * as yaml from "yaml-language-server-parser";
+import { Schema } from "yaml-language-server-parser/dist/src/schema";
+import { Type } from "yaml-language-server-parser/dist/src/type";
 import * as DEFAULT_SAFE_SCHEMA from "yaml-language-server-parser/dist/src/schema/default_safe";
+
 import { Node } from "./types";
 import { parseJsonPointer, joinJsonPointer } from "./pointer";
 import { find } from "./traverse";
 
 export function parseYaml(
   text: string,
-  schema?: any
+  customTags?: { [tag: string]: "scalar" | "sequence" | "mapping" }
 ): [YamlNode, { message: string; offset: number }[]] {
   const documents = [];
   yaml.loadAll(
@@ -19,7 +22,7 @@ export function parseYaml(
     (document) => {
       documents.push(document);
     },
-    { schema: schema ? schema : DEFAULT_SAFE_SCHEMA }
+    { schema: createSchema(customTags) }
   );
 
   if (documents.length !== 1) {
@@ -306,4 +309,16 @@ export function findYamlNodeAtOffset(node: yaml.YAMLNode, offset: number): yaml.
     return node;
   }
   return null;
+}
+
+function createSchema(
+  customTags: { [tag: string]: "scalar" | "sequence" | "mapping" } | undefined
+): Schema {
+  if (!customTags) {
+    return DEFAULT_SAFE_SCHEMA;
+  }
+
+  const types = Object.entries(customTags).map(([key, value]) => new Type(key, { kind: value }));
+
+  return Schema.create(DEFAULT_SAFE_SCHEMA, types);
 }
