@@ -4,15 +4,14 @@
 */
 
 import * as yaml from "yaml-language-server-parser";
-import { Schema, DEFAULT_SAFE_SCHEMA } from "js-yaml";
+import * as DEFAULT_SAFE_SCHEMA from "yaml-language-server-parser/dist/src/schema/default_safe";
 import { Node } from "./types";
 import { parseJsonPointer, joinJsonPointer } from "./pointer";
 import { find } from "./traverse";
-import { resourceLimits } from "worker_threads";
 
 export function parseYaml(
   text: string,
-  schema?: Schema
+  schema?: any
 ): [YamlNode, { message: string; offset: number }[]] {
   const documents = [];
   yaml.loadAll(
@@ -78,6 +77,12 @@ export class YamlNode implements Node {
     } else if (this.node.kind === yaml.Kind.SCALAR) {
       // fixme should not happen
       return (<yaml.YAMLScalar>this.node).value;
+    }
+  }
+
+  getRawValue() {
+    if (this.node.kind === yaml.Kind.MAPPING && this.node.value.kind === yaml.Kind.SCALAR) {
+      return this.node.value.rawValue;
     }
   }
 

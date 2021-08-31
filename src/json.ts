@@ -5,7 +5,7 @@
 
 import * as json from "jsonc-parser";
 import { ExtendedError, ExtendedErrorCode, parseTree } from "./json-parser";
-import { Node } from "./types";
+import { Node, ExtendedNode } from "./types";
 import { parseJsonPointer, joinJsonPointer } from "./pointer";
 import { find } from "./traverse";
 
@@ -44,9 +44,9 @@ export function parseJson(
 }
 
 export class JsonNode implements Node {
-  node: json.Node;
+  node: ExtendedNode;
 
-  constructor(node: json.Node) {
+  constructor(node: ExtendedNode) {
     this.node = node;
   }
 
@@ -82,8 +82,12 @@ export class JsonNode implements Node {
     return null;
   }
 
-  getValue(): string {
+  getValue(): any {
     return this.node.value;
+  }
+
+  getRawValue(): string {
+    return this.node.rawValue;
   }
 
   getRange(): [number, number] {

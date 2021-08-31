@@ -3,11 +3,11 @@
  Licensed under the GNU Affero General Public License version 3. See LICENSE.txt in the project root for license information.
 */
 
-import { Schema } from "js-yaml";
+import { Node as JsonNode } from "jsonc-parser";
 
 export interface Options {
   yaml?: {
-    schema?: Schema;
+    schema?: any;
   };
 }
 
@@ -15,7 +15,8 @@ export interface Node {
   getChildren(): Node[];
   getDepth(): number;
   getKey(): string;
-  getValue(): string;
+  getValue(): any;
+  getRawValue(): string;
   getParent(): Node;
   find(pointer: string): Node;
   getRange(): [number, number];
@@ -27,4 +28,8 @@ export interface Node {
   prev(): Node | undefined;
   isArray(): boolean;
   isObject(): boolean;
+}
+
+export interface ExtendedNode extends JsonNode {
+  readonly rawValue?: string;
 }

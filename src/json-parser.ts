@@ -12,6 +12,7 @@ import {
   ParseOptions,
   visit,
 } from "jsonc-parser";
+import { ExtendedNode } from "./types";
 
 interface NodeImpl extends Node {
   type: NodeType;
@@ -21,6 +22,7 @@ interface NodeImpl extends Node {
   colonOffset?: number;
   parent?: NodeImpl;
   children?: NodeImpl[];
+  rawValue?: string;
 }
 
 namespace ParseOptions {
@@ -86,7 +88,7 @@ export function parseTree(
   text: string,
   errors: ExtendedError[] = [],
   options: ParseOptions = ParseOptions.DEFAULT
-): Node | undefined {
+): ExtendedNode | undefined {
   let currentParent: NodeImpl = {
     type: "array",
     offset: -1,
@@ -102,7 +104,7 @@ export function parseTree(
     }
   }
 
-  function onValue(valueNode: Node): Node {
+  function onValue(valueNode: NodeImpl): ExtendedNode {
     currentParent.children!.push(valueNode);
     return valueNode;
   }
@@ -171,7 +173,14 @@ export function parseTree(
       ensurePropertyComplete(offset + length);
     },
     onLiteralValue: (value: any, offset: number, length: number) => {
-      onValue({ type: getNodeType(value), offset, length, parent: currentParent, value });
+      onValue({
+        type: getNodeType(value),
+        offset,
+        length,
+        parent: currentParent,
+        value,
+        rawValue: text.substring(offset, offset + length),
+      });
       ensurePropertyComplete(offset + length);
     },
     onSeparator: (sep: string, offset: number, length: number) => {

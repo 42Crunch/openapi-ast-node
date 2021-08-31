@@ -3,7 +3,7 @@
  Licensed under the GNU Affero General Public License version 3. See LICENSE.txt in the project root for license information.
 */
 
-import { Node, Options } from "./types";
+import { Node, Options, ExtendedNode } from "./types";
 import { parseJson, JsonNode } from "./json";
 import { parseYaml, findYamlNodeAtOffset, YamlNode } from "./yaml";
 import { parseJsonPointer, joinJsonPointer } from "./pointer";
@@ -30,4 +30,5 @@ export {
   Options,
   replace,
   Replacement,
+  ExtendedNode,
 };
