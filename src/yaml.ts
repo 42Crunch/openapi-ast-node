@@ -170,7 +170,7 @@ export class YamlNode implements Node {
         result.push(new YamlNode(mapping));
       }
     } else if (this.node.kind === yaml.Kind.SEQ) {
-      for (const item of this.node.value.items) {
+      for (const item of (<yaml.YAMLSequence>this.node).items) {
         if (item) {
           result.push(new YamlNode(item));
         }
